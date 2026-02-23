@@ -1,5 +1,5 @@
 <div align="center">
-    <h1><b><span style="font-size: 1.3em">🛩️</span> GoAirDrop</b></h1>
+    <h1><b><span style="font-size: 0.8em">📦</span> GoAirDrop</b></h1>
     <span>Simple program to receive text<b><span style="font-size: 0.8em"> <br>(🚧 WIP)</span></b></span>
 <br>
 <br>
