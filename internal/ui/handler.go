@@ -4,14 +4,15 @@ package ui
 import (
 	"embed"
 	"html/template"
+	"io/fs"
 	"log/slog"
 	"net/http"
 
 	"github.com/mateconpizza/goairdrop/internal/application"
 )
 
-//go:embed templates/*.gohtml
-var templateFS embed.FS
+//go:embed "templates" "static"
+var files embed.FS
 
 type Handler struct {
 	tmpl *template.Template
@@ -19,12 +20,12 @@ type Handler struct {
 }
 
 func New(app *application.App) (*Handler, error) {
-	entries, _ := templateFS.ReadDir("templates")
+	entries, _ := files.ReadDir("templates")
 	for _, e := range entries {
 		slog.Info("embedded file", slog.String("name", e.Name()))
 	}
 
-	tmpl, err := template.ParseFS(templateFS, "templates/*.gohtml")
+	tmpl, err := template.ParseFS(files, "templates/*.gohtml")
 	if err != nil {
 		return nil, err
 	}
@@ -35,6 +36,13 @@ func New(app *application.App) (*Handler, error) {
 func (h *Handler) SetupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /config", h.showConfig)
 	mux.HandleFunc("POST /config", h.saveConfig)
+
+	// static and cache files
+	staticFS, err := fs.Sub(files, "static")
+	if err != nil {
+		panic(err)
+	}
+	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 }
 
 func (h *Handler) showConfig(w http.ResponseWriter, r *http.Request) {
