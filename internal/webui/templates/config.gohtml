@@ -1,0 +1,177 @@
+{{ define "content" }}
+<!-- <pre>{{ printf "%#v" . }}</pre> -->
+<form method="POST" action="/config">
+  <!-- CSRF token -->
+  <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+  {{ range $i, $hook := .Cfg.Hooks }}
+  <details class="hook {{if $hook.Disabled}}hook-disabled{{end}}">
+    <summary>
+      <strong>{{$hook.Name}}</strong>
+      <span class="meta">
+        <strong>{{$hook.Method}}</strong>
+        <span class="{{if eq $hook.Type "command"}}text-red{{else if eq $hook.Type "upload"}}text-green{{end}}">
+          {{$hook.Type}}
+        </span>
+        <span class="badge">{{$hook.Endpoint}}</span>
+      </span>
+    </summary>
+    <div class="hook-body">
+      <div class="field">
+        <label>Name</label>
+        <input type="text"
+               name="hooks[{{$i}}].name"
+               value="{{$hook.Name}}"
+               {{if $hook.Disabled}}
+               disabled
+               {{end}}>
+      </div>
+      <div class="field">
+        <label>Endpoint</label>
+        <input type="text"
+               name="hooks[{{$i}}].endpoint"
+               value="{{$hook.Endpoint}}"
+               {{if $hook.Disabled}}
+               disabled
+               {{end}}>
+      </div>
+      <div class="field">
+        <label>Method</label>
+        <select name="hooks[{{$i}}].method" {{if $hook.Disabled}}disabled{{end}}>
+          <option value="GET" {{ if eq $hook.Method "GET" }}selected{{ end }}>GET
+          </option>
+          <option value="POST" {{ if eq $hook.Method "POST" }}selected{{ end }}>POST
+          </option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Type</label>
+        <select name="hooks[{{$i}}].type" {{if $hook.Disabled}}disabled{{end}}>
+          <option value="command" {{ if eq $hook.Type "command" }}selected{{ end }}>command
+          </option>
+          <option value="upload"  {{ if eq $hook.Type "upload"  }}selected{{ end }}>upload
+          </option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Notify</label>
+        <select name="hooks[{{$i}}].notify" {{if $hook.Disabled}}disabled{{end}}>
+          <option value="true" {{ if $hook.Notify }}selected{{ end }}>True
+          </option>
+          <option value="false"  {{ if not $hook.Notify }}selected{{ end }}>False
+          </option>
+        </select>
+      </div>
+      <!-- Upload-specific fields -->
+      {{ if eq $hook.Type "upload" }}
+      <div class="field">
+        <label>Destination</label>
+        <input type="text"
+               name="hooks[{{$i}}].destination"
+               value="{{$hook.Destination}}"
+               {{if $hook.Disabled}}
+               disabled
+               {{end}}>
+      </div>
+      <div class="field">
+        <label>Max Size (MB)</label>
+        <input type="number"
+               name="hooks[{{$i}}].max_size_mb"
+               value="{{$hook.MaxSizeMB}}"
+               {{if $hook.Disabled}}
+               disabled
+               {{end}}>
+      </div>
+      <div class="field">
+        <label>Rate Limit (per minute)</label>
+        <input type="number"
+               name="hooks[{{$i}}].rate_limit_per_minute"
+               value="{{$hook.RateLimitPerMinute}}"
+               {{if $hook.Disabled}}
+               disabled
+               {{end}}>
+      </div>
+      <div class="field">
+        <label>Filename Strategy</label>
+        <input type="text"
+               name="hooks[{{$i}}].filename_strategy"
+               value="{{$hook.FilenameStrategy}}"
+               {{if $hook.Disabled}}
+               disabled
+               {{end}}>
+      </div>
+      <div class="field">
+        <label>Allowed MIME Types</label>
+        {{ range $j, $mt := $hook.AllowedMIMETypes }}
+        <input type="text"
+               name="hooks[{{$i}}].allowed_mime_types[{{$j}}]"
+               value="{{$mt}}"
+               {{if $hook.Disabled}}
+               disabled
+               {{end}}>
+        {{ end }}
+      </div>
+      {{ end }}
+      <!-- Command-specific fields -->
+      {{ if and (eq $hook.Type "command") $hook.CommandTemplate }}
+      <div class="field">
+        <label>Command</label>
+        <input type="text"
+               name="hooks[{{$i}}].command_template.command"
+               value="{{$hook.CommandTemplate.Command}}"
+               {{if $hook.Disabled}}
+               disabled
+               {{end}}>
+      </div>
+      <div class="field">
+        <label>Args</label>
+        {{ range $j, $arg := $hook.CommandTemplate.Args }}
+        <input type="text"
+               name="hooks[{{$i}}].command_template.args[{{$j}}]"
+               value="{{$arg}}"
+               {{if $hook.Disabled}}
+               disabled
+               {{end}}>
+        {{ end }}
+      </div>
+      <div class="field">
+        <label>Timeout (seconds)</label>
+        <input type="number"
+               name="hooks[{{$i}}].command_template.timeout_seconds"
+               value="{{$hook.CommandTemplate.TimeoutSeconds}}"
+               {{if $hook.Disabled}}
+               disabled
+               {{end}}>
+      </div>
+      {{ end }}
+      <!-- Allowed Actions (shared) -->
+      <div class="field">
+        <label>Allowed Actions</label>
+        {{ range $j, $act := $hook.AllowedActions }}
+        <input type="text"
+               name="hooks[{{$i}}].allowed_actions[{{$j}}]"
+               value="{{$act}}"
+               {{if $hook.Disabled}}
+               disabled
+               {{end}}>
+        {{ end }}
+      </div>
+      <!-- Disabled -->
+      <div class="field">
+        <label>Disabled</label>
+        <select name="hooks[{{$i}}].disabled">
+          <option value="false" {{ if not $hook.Disabled }}selected{{ end }}>False
+          </option>
+          <option value="true"  {{ if $hook.Disabled }}selected{{ end }}>True
+          </option>
+        </select>
+      </div>
+    </div>
+    <hr>
+  </hr>
+</details>
+{{ end }}
+<div class="button-container">
+  <button type="submit">Save</button>
+</div>
+</form>
+{{ end }}

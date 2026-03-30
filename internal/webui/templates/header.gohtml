@@ -1,0 +1,19 @@
+{{ define "header" }}
+<span class="title">
+  goaird <span class="badge version">v{{ .AppVer }}</span> / hooks
+</span>
+<div class="btn-container">
+  <!-- toggle theme -->
+  <form method="POST" action="/theme" class="theme-toggle-form">
+    <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+    <button class="theme-toggle" aria-label="Toggle theme">{{ template "svg-toggle-theme" }}</button>
+  </form>
+  {{ if .IsAuth }}
+  <!-- user logout -->
+  <form method="POST" action="/logout" class="user-login-form">
+    <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+    <button class="btn-user">logout</button>
+  </form>
+  {{ end }}
+</div>
+{{ end }}

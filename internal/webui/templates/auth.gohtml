@@ -1,0 +1,10 @@
+{{ define "auth" }}
+<div class="auth-container">
+  <form method="POST" action="/auth">
+    <!-- CSRF token -->
+    <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+    <input type="password" name="token" placeholder="token" required>
+    <button type="submit">login</button>
+  </form>
+</div>
+{{ end }}

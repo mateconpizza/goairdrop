@@ -1,0 +1,137 @@
+:root {
+  /* light theme colors */
+
+  /* base colors */
+  --bg: #fff;
+  --bg-alt: #f3f4f6;
+  --bg-hover: #e5e7eb;
+  --bg-card: #fff;
+  --border: #d1d5db;
+
+  /* text colors */
+  --text: #374151;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --text-light: #9ca3af;
+
+  /* utility */
+  --edit: #cbd5e0;
+  --favorite: #f6ad55;
+  --active-item: #b2f5ea;
+
+  /* accent colors */
+  --accent: #5a67d8;
+  --accent-light: #c3dafe;
+  --accent-hover: #434190;
+  --text-on-accent: #fff;
+
+  /* action colors */
+  --link: #5a67d8;
+  --link-hover: #434190;
+  --success: #38a169;
+  --success-dark: #2f855a;
+  --success-darker: #276749;
+  --error: #dc3545;
+  --error-bright: #ff5e6d;
+  --error-dark: #b02a37;
+  --warning: #e0af68;
+  --error-dark-confirm: #fff;
+
+  /* component specific */
+  --header-bg: rgb(248 249 250 / 95%);
+  --input-bg: rgb(255 255 255 / 95%);
+  --modal-overlay: rgb(0 0 0 / 50%);
+
+  /* shadows */
+  --shadow-input: 0 8px 32px rgb(0 0 0 / 12%);
+  --shadow-light: 0 2px 4px rgb(0 0 0 / 6%);
+  --shadow-medium: 0 4px 20px rgb(0 0 0 / 10%);
+  --shadow-strong: 0 8px 30px rgb(0 0 0 / 15%);
+  --shadow-dropdown: 0 4px 10px rgb(0 0 0 / 12%);
+  --shadow-autocomplete: 0 4px 6px rgb(0 0 0 / 10%);
+  --shadow-modal: 0 20px 40px rgb(0 0 0 / 20%);
+
+  /* button shadows */
+  --btn-success-shadow: 0 6px 12px rgb(56 161 105 / 25%);
+  --btn-success-shadow-hover: 0 8px 16px rgb(56 161 105 / 35%);
+  --btn-success-shadow-active: 0 4px 8px rgb(56 161 105 / 18%);
+  --btn-error-shadow: 0 6px 12px rgb(220 53 69 / 25%);
+  --btn-error-shadow-hover: 0 8px 16px rgb(220 53 69 / 35%);
+  --btn-error-shadow-active: 0 4px 8px rgb(220 53 69 / 18%);
+
+  /* button backgrounds with transparency */
+  --btn-error-bg-light: rgb(220 53 69 / 12%);
+  --btn-accent-bg-light: rgb(90 103 216 / 12%);
+  --btn-favorite-bg-light: rgb(246 173 85 / 12%);
+
+  /* gradient colors */
+  --gradient-start: rgb(220 53 69 / 35%);
+  --gradient-end: rgb(220 53 69 / 0%);
+}
+
+[data-theme="dark"] {
+  /* dark theme colors */
+
+  /* base colors */
+  --bg: #111827;
+  --bg-alt: #1f2937;
+  --bg-hover: #374151;
+  --bg-card: #1f2937;
+  --border: #4b5563;
+
+  /* text colors */
+  --text: #f9fafb;
+  --text-secondary: #d1d5db;
+  --text-muted: #9ca3af;
+  --text-light: #6b7280;
+
+  /* utility */
+  --edit: #6b7280;
+  --favorite: #f6ad55;
+  --active-item: #34d399;
+
+  /* accent colors */
+  --accent: #93c5fd;
+  --accent-light: #bfdbfe;
+  --accent-hover: #60a5fa;
+  --current-db: #a78bfa;
+  --text-on-accent: #f9fafb;
+
+  /* action colors */
+  --link: #93c5fd;
+  --link-hover: #60a5fa;
+  --success: #10b981;
+  --success-dark: #059669;
+  --success-darker: #047857;
+  --error: #dc2626;
+  --error-bright: #ff5e6d;
+  --error-dark: #ef4444;
+  --warning: #facc15;
+  --error-dark-confirm: #fff;
+
+  /* component specific */
+  --header-bg: rgb(17 24 39 / 95%);
+  --input-bg: rgb(31 41 55 / 95%);
+  --modal-overlay: rgb(0 0 0 / 70%);
+
+  /* shadows */
+  --shadow-input: 0 8px 32px rgb(0 0 0 / 28%);
+  --shadow-light: 0 2px 4px rgb(0 0 0 / 18%);
+  --shadow-medium: 0 4px 20px rgb(0 0 0 / 22%);
+  --shadow-strong: 0 8px 30px rgb(0 0 0 / 35%);
+  --shadow-dropdown: 0 4px 10px rgb(0 0 0 / 28%);
+  --shadow-modal: 0 20px 40px rgb(0 0 0 / 38%);
+
+  /* button shadows */
+  --btn-success-shadow: 0 6px 12px rgb(16 185 129 / 25%);
+  --btn-success-shadow-hover: 0 8px 16px rgb(16 185 129 / 35%);
+  --btn-success-shadow-active: 0 4px 8px rgb(16 185 129 / 18%);
+  --btn-error-shadow: 0 6px 12px rgb(239 68 68 / 25%);
+  --btn-error-shadow-hover: 0 8px 16px rgb(239 68 68 / 35%);
+  --btn-error-shadow-active: 0 4px 8px rgb(239 68 68 / 18%);
+
+  /* button backgrounds with transparency */
+  --btn-error-bg-light: rgb(220 53 69 / 12%);
+  --btn-accent-bg-light: rgb(147 197 253 / 15%);
+  --btn-favorite-bg-light: rgb(114 236 126 / 15%);
+}
