@@ -162,6 +162,16 @@ func (h *Handler) authPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if token == h.app.DefaultToken {
+		h.app.Logger.Warn("request authenticated with default token",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"ip", r.RemoteAddr,
+		)
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	h.data.IsAuth = true
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

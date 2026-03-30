@@ -27,7 +27,7 @@ func Chain(h http.Handler, m ...Middleware) http.Handler {
 }
 
 // Auth is a middleware that checks for a valid X-Goaird-Token.
-func Auth(expectedToken string, next http.Handler, logger *slog.Logger) http.Handler {
+func Auth(expectedToken, defaultToken string, next http.Handler, logger *slog.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header.Get(HeaderToken)
 
@@ -41,7 +41,16 @@ func Auth(expectedToken string, next http.Handler, logger *slog.Logger) http.Han
 			return
 		}
 
-		// 3. If valid, proceed to the next handler
+		if token == defaultToken {
+			logger.Warn("request authenticated with default token",
+				"method", r.Method,
+				"path", r.URL.Path,
+				"ip", r.RemoteAddr,
+			)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }

@@ -22,15 +22,14 @@ import (
 
 var ErrInvalidFilename = errors.New("invalid filename")
 
-// HandleUploadHook handles an HTTP POST with one or more uploaded files.
-func HandleUploadHook(h *Hook, logger *slog.Logger) http.HandlerFunc {
+func (m *Manager) NewUpload(h *Hook) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
-		files, err := parseFiles(r, logger)
+		files, err := parseFiles(r, m.logger)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -40,7 +39,7 @@ func HandleUploadHook(h *Hook, logger *slog.Logger) http.HandlerFunc {
 		uploadDir := cli.ExpandUser(h.Destination)
 
 		for _, fh := range files {
-			if err := saveUploadedFile(fh, uploadDir, logger); err != nil {
+			if err := saveUploadedFile(fh, uploadDir, m.logger); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -59,14 +58,14 @@ func HandleUploadHook(h *Hook, logger *slog.Logger) http.HandlerFunc {
 						deviceName+" ("+getClientIP(r)+")",
 					),
 				),
-				notify.WithAppName("goaird"),
+				notify.WithAppName(m.appName),
 				notify.WithIcon(notify.IconInfo),
 				notify.WithUrgency(notify.UrgencyNormal),
 				notify.WithID(999),
 			)
 
 			if _, err := notification.Send(); err != nil {
-				logger.Error("Failed to send notification", "error", err.Error())
+				m.logger.Error("Failed to send notification", "error", err.Error())
 			}
 		}
 
@@ -75,11 +74,11 @@ func HandleUploadHook(h *Hook, logger *slog.Logger) http.HandlerFunc {
 			Message: fmt.Sprintf("Successfully uploaded %d file(s)", len(files)),
 		}
 
-		logger.Info(resp.Message)
+		m.logger.Info(resp.Message)
 
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			logger.Error("Error encoding response", "error", err.Error())
+			m.logger.Error("Error encoding response", "error", err.Error())
 		}
 	}
 }

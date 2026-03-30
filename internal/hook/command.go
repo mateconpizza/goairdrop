@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"os/exec"
 	"regexp"
@@ -17,13 +16,8 @@ import (
 	"github.com/mateconpizza/goairdrop/internal/notify"
 )
 
-func HandleCommandHook(h *Hook, logger *slog.Logger) http.HandlerFunc {
+func (m *Manager) NewCommand(h *Hook) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != h.Method {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
 		var payload map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "bad JSON", http.StatusBadRequest)
@@ -32,7 +26,7 @@ func HandleCommandHook(h *Hook, logger *slog.Logger) http.HandlerFunc {
 
 		action, _ := payload["action"].(string)
 		if !slices.Contains(h.AllowedActions, action) {
-			logger.Error("commandHook", "action", action, "allowed", strings.Join(h.AllowedActions, ","))
+			m.logger.Error("commandHook", "action", action, "allowed", strings.Join(h.AllowedActions, ","))
 			http.Error(w, "forbidden action", http.StatusForbidden)
 			return
 		}
@@ -44,8 +38,8 @@ func HandleCommandHook(h *Hook, logger *slog.Logger) http.HandlerFunc {
 		defer cancel()
 
 		command := cli.ExpandUser(h.CommandTemplate.Command)
-		logger.Info("commandHook", "command", command)
-		logger.Info("commandHook", "resolvedArgs", strings.Join(resolvedArgs, " "))
+		m.logger.Info("commandHook", "command", command)
+		m.logger.Info("commandHook", "resolvedArgs", strings.Join(resolvedArgs, " "))
 		cmd := exec.CommandContext(ctx, command, resolvedArgs...)
 		err := cmd.Run()
 		if err != nil {
@@ -55,26 +49,26 @@ func HandleCommandHook(h *Hook, logger *slog.Logger) http.HandlerFunc {
 
 		msg := fmt.Sprintf("%s %s", command, strings.Join(resolvedArgs, " "))
 		if h.Notify {
-			logger.Info("commandHook: notification to user", "message", msg)
+			m.logger.Info("commandHook: notification to user", "message", msg)
 			t := notify.New(
 				notify.WithContext(ctx),
 				notify.WithSummary(h.Name),
 				notify.WithBody(msg),
-				notify.WithAppName("goaird"),
+				notify.WithAppName(m.appName),
 				notify.WithIcon(notify.IconInfo),
 				notify.WithUrgency(notify.UrgencyNormal),
 				notify.WithID(999),
 			)
 
 			if _, err := t.Send(); err != nil {
-				logger.Error("Failed to send notification", "error", err.Error())
+				m.logger.Error("Failed to send notification", "error", err.Error())
 			}
 		}
 
 		resp := Response{Success: true, Message: msg}
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			logger.Error("Error encoding response", "error", err.Error())
+			m.logger.Error("Error encoding response", "error", err.Error())
 		}
 	}
 }

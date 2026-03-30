@@ -1,78 +1,70 @@
 package main
 
 import (
-	"log"
-	"log/slog"
+	"context"
+	"net/http"
+	"time"
 
 	"github.com/mateconpizza/goairdrop/internal/application"
-	"github.com/mateconpizza/goairdrop/internal/ui"
-	"github.com/mateconpizza/goairdrop/internal/webhook"
+	"github.com/mateconpizza/goairdrop/internal/cli"
+	"github.com/mateconpizza/goairdrop/internal/server"
+	"github.com/mateconpizza/goairdrop/internal/server/cleanup"
+	"github.com/mateconpizza/goairdrop/internal/server/middleware"
+	"github.com/mateconpizza/goairdrop/internal/webui"
 )
 
 const (
-	Name    = "goairdrop"
-	Version = "0.1.1"
+	appName = "goaird"
+	version = "0.1.1"
 )
 
-func mainNew() {
-	app := application.New(Name, Version)
-	if err := app.Parse(); err != nil {
-		log.Fatal(err)
+func main() {
+	app := application.New(appName, version)
+	if err := app.Init(); err != nil {
+		cli.ErrAndExit(app.Name, err)
 	}
 
-	if app.LogFile != nil {
-		defer func() {
-			if err := app.LogFile.Close(); err != nil {
-				slog.Error("Failed closing log file", slog.String("error", err.Error()))
-			}
-		}()
-	}
-
-	if err := app.Run(); err != nil {
-		app.Error(err)
-		return
+	if err := run(app); err != nil {
+		cli.ErrAndExit(app.Name, err)
 	}
 }
 
-func main() {
-	app := application.New(Name, Version)
-	if err := app.Parse(); err != nil {
-		log.Fatal(err)
-	}
+func run(app *application.App) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	defer func() {
-		if err := app.LogFile.Close(); err != nil {
-			slog.Error("Failed closing log file", slog.String("error", err.Error()))
-		}
-	}()
-
-	if err := app.LoadConfig(); err != nil {
-		slog.Error("main", slog.String("error", err.Error()))
-		return
-	}
-
-	if app.Cfg.Server.Address != "" {
-		app.CmdArgs.Addr = app.Cfg.Server.Address
-	}
-
-	mux, err := app.SetupRoutes()
+	mux := http.NewServeMux()
+	mux, err := app.Routes(mux)
 	if err != nil {
-		slog.Error("main", slog.String("error", err.Error()))
-		return
+		return err
 	}
 
-	uiHandler, err := ui.New(app)
+	ui, err := webui.New(app)
 	if err != nil {
-		slog.Error("main", slog.String("error", err.Error()))
-		return
+		return err
 	}
-	uiHandler.SetupRoutes(mux)
+	ui.Routes(mux)
 
-	server := webhook.New(app.CmdArgs.Addr, mux)
+	srv := server.New(
+		server.WithMux(mux),
+		server.WithAddr(app.Cfg.Server.Addr),
+		server.WithLogger(app.Logger),
+		server.WithMiddleware([]server.Middleware{
+			middleware.Logging,
+			middleware.PanicRecover,
+		}...),
+	)
 
-	slog.Info("Server starting on " + app.CmdArgs.Addr)
-	if err := server.Start(); err != nil {
-		slog.Error("main", slog.String("error", err.Error()))
-		return
-	}
+	cleanup.Register(
+		func() error {
+			app.Logger.Info("shutting down HTTP server")
+			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer shutdownCancel()
+
+			return srv.Shutdown(shutdownCtx)
+		},
+	)
+	cleanup.Listen(ctx, cancel, app.Logger)
+
+	return srv.Start()
 }

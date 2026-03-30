@@ -185,7 +185,7 @@ linters:
       - builtin$
       - examples$
     rules:
-      - path: "internal/cli/table.go"
+      - path: "internal/cli/cli.go"
         linters:
           - funlen
       - path: "internal/webhook/hook_test.go"

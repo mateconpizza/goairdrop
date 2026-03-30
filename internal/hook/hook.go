@@ -3,6 +3,7 @@ package hook
 
 import (
 	"errors"
+	"log/slog"
 	"slices"
 	"strconv"
 	"strings"
@@ -56,6 +57,15 @@ type ExecConfig struct {
 	Command        string   `json:"command"`
 	Args           []string `json:"args"`
 	TimeoutSeconds int      `json:"timeout_seconds"`
+}
+
+type Manager struct {
+	appName string
+	logger  *slog.Logger
+}
+
+func NewManager(appName string, logger *slog.Logger) *Manager {
+	return &Manager{appName: appName, logger: logger}
 }
 
 func (h *Hook) Validate() error {

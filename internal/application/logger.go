@@ -3,28 +3,18 @@ package application
 import (
 	"fmt"
 	"io"
-	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/mateconpizza/goairdrop/internal/cli"
 )
 
 // newLogger creates a new logger that writes to both the specified file and stdout.
-func newLogger(filePath string) (*os.File, *slog.Logger, error) {
-	const filePerm = 0o644 // Permissions for new files.
-	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, filePerm)
-	if err != nil {
-		return nil, nil, fmt.Errorf("%w", err)
-	}
-
-	multiWriter := io.MultiWriter(f, os.Stdout)
-	logger := slog.New(slog.NewJSONHandler(multiWriter, &slog.HandlerOptions{
+func newLogger(level slog.Level, w io.Writer) *slog.Logger {
+	return slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{
 		AddSource: true,
-		Level:     slog.LevelDebug,
+		Level:     level,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			switch a.Key {
 			case slog.TimeKey:
@@ -44,26 +34,12 @@ func newLogger(filePath string) (*os.File, *slog.Logger, error) {
 			return a
 		},
 	}))
-
-	return f, logger, nil
 }
 
-// initDefaultLogger sets up the default logger for the application.
-func initDefaultLogger(appName string) (*os.File, *slog.Logger) {
-	logFname := logPath(appName)
-
-	f, logger, err := newLogger(logFname)
-	if err != nil {
-		log.Fatalf("Failed to open log file: %v", err)
-	}
-
+func parseLogger(app *App) {
+	level := slog.LevelDebug
+	writer := os.Stdout
+	logger := newLogger(level, writer)
 	slog.SetDefault(logger)
-
-	return f, logger
-}
-
-// logPath returns the XDG-compliant log file path for the given name.
-func logPath(appName string) string {
-	localState := cli.GetEnv("XDG_STATE_HOME", cli.ExpandUser("~/.local/state"))
-	return filepath.Join(localState, appName+".json")
+	app.Logger = logger
 }
