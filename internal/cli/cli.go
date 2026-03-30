@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 )
@@ -23,26 +22,6 @@ const (
 	DirectoryPerm = 0o755 // Permissions for new directories.
 	FilePerm      = 0o644 // Permissions for new files.
 )
-
-const (
-	red   = "\x1b[31m"
-	green = "\x1b[32m"
-	reset = "\x1b[0m"
-)
-
-func Red(s string) string {
-	return red + s + reset
-}
-
-func Green(s string) string {
-	return green + s + reset
-}
-
-// AnsiRemover removes ANSI codes from a given string.
-func AnsiRemover(s string) string {
-	re := regexp.MustCompile(`\x1b\[[0-9;]*m`)
-	return re.ReplaceAllString(s, "")
-}
 
 // Exit codes used by the application.
 const (

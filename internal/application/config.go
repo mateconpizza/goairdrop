@@ -99,6 +99,10 @@ func loadConfig(a *App) error {
 	a.Cfg = cfg
 	a.CfgFile = path
 
+	for i := range a.Cfg.Hooks {
+		a.mgr.Register(&a.Cfg.Hooks[i])
+	}
+
 	return nil
 }
 
@@ -147,3 +151,28 @@ func defaultConfig(appName string) *Config {
 		},
 	}
 }
+
+// func loadOrCreateToken(path string) (string, error) {
+// 	if b, err := os.ReadFile(path); err == nil {
+// 		return strings.TrimSpace(string(b)), nil
+// 	}
+//
+// 	token := generateToken()
+//
+// 	err := os.WriteFile(path, []byte(token), FilePerm)
+// 	if err != nil {
+// 		return "", err
+// 	}
+//
+// 	return token, nil
+// }
+
+// generateToken generates a 32-char string.
+// func generateToken() string {
+// 	b := make([]byte, 32) // 16 bytes = 128 bits of entropy
+// 	if _, err := rand.Read(b); err != nil {
+// 		return "fallback-please-change-me-12345"
+// 	}
+//
+// 	return hex.EncodeToString(b)
+// }

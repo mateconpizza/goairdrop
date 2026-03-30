@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/mateconpizza/goairdrop/internal/cli"
@@ -32,54 +33,74 @@ type App struct {
 	Logger *slog.Logger // application logger
 
 	DefaultToken string
+	mgr          *hook.Manager
 }
 
 type arguments struct {
-	args    []string
-	verbose bool
-	list    bool
+	args     []string
+	verbose  bool
+	version  bool
+	generate bool
+	list     bool
+	Webui    bool
 }
 
-func (a *App) parse(c *commander) error {
-	args := os.Args[1:]
-
-	// no args → just flags
-	if len(args) == 0 {
-		return a.parseFlags(c, args)
-	}
-
-	// detect subcommand
-	switch args[0] {
-	case cmdGen:
-		a.cmd = cmdGen
-		a.Flag.args = args[1:]
-		return nil
-	case cmdVersion:
-		a.cmd = cmdVersion
-		return nil
-	}
-
-	// otherwise treat as flags
-	return a.parseFlags(c, args)
+type command struct {
+	name      string
+	nameShort string
+	short     string
+	value     *bool
 }
 
-func (a *App) parseFlags(c *commander, args []string) error {
-	a.FlagSet.BoolVar(&a.Flag.verbose, "verbose", false, "increase verbosity")
-	a.FlagSet.BoolVar(&a.Flag.verbose, "v", false, "increase verbosity")
-	a.FlagSet.BoolVar(&a.Flag.list, "l", false, "list configured hooks")
-	a.FlagSet.BoolVar(&a.Flag.list, "list", false, "list registered hooks")
-	a.FlagSet.Usage = c.usage()
+func (a *App) commands() []command {
+	return []command{
+		{"list", "l", "list configured hooks", &a.Flag.list},
+		{"gen", "g", "generate a cURL from a hook", &a.Flag.generate},
+		{"webui", "w", "enable webui", &a.Flag.Webui},
+		{"version", "V", "print version and exit", &a.Flag.version},
+		{"verbose", "v", "increase verbosity", &a.Flag.verbose},
+	}
+}
 
-	return a.FlagSet.Parse(args)
+func (a *App) parseFlags() error {
+	for _, c := range a.commands() {
+		a.FlagSet.BoolVar(c.value, c.name, false, c.short)
+		a.FlagSet.BoolVar(c.value, c.nameShort, false, c.short)
+	}
+	a.FlagSet.Usage = a.usage()
+	return a.FlagSet.Parse(a.Flag.args)
+}
+
+func (a *App) usage() func() {
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "Usage: %s <flag> [args]\n\n", a.Name)
+
+	cmds := a.commands()
+	if len(cmds) > 0 {
+		const padding = 16
+		sb.WriteString("Flags:\n")
+		for _, c := range cmds {
+			flagStr := fmt.Sprintf("-%s, --%s", c.nameShort, c.name)
+			fmt.Fprintf(&sb, "  %-*s %s\n", padding, flagStr, c.short)
+		}
+	}
+
+	cfgPath, _ := configPath(a.Name)
+	if Exists(cfgPath) {
+		sb.WriteString("\nPath:\n")
+		fmt.Fprintf(&sb, "  %s\n", cfgPath)
+	}
+
+	return func() {
+		fmt.Fprint(a.Stdout, sb.String())
+	}
 }
 
 func (a *App) Routes(mux *http.ServeMux) (*http.ServeMux, error) {
-	a.Logger.Info("main:hooks", slog.Int("processing hooks", len(a.Cfg.Hooks)))
+	a.Logger.Info("main:hooks", slog.Int("processing hooks", len(a.mgr.Hooks)))
 
-	mgr := hook.NewManager(a.Name, a.Logger)
-
-	for i := range a.Cfg.Hooks {
-		h := a.Cfg.Hooks[i]
+	for i := range a.mgr.Hooks {
+		h := a.mgr.Hooks[i]
 
 		if h.Disabled {
 			a.Logger.Debug("main:hooks", "hook", h.Name, "disable", h.Disabled)
@@ -95,10 +116,10 @@ func (a *App) Routes(mux *http.ServeMux) (*http.ServeMux, error) {
 
 		switch h.Type {
 		case hook.TypeCommand:
-			cmd := mgr.NewCommand(&h)
+			cmd := a.mgr.NewCommand(h)
 			mux.Handle(pattern, middleware.Auth(a.Cfg.Server.Token, a.DefaultToken, cmd, a.Logger))
 		case hook.TypeUpload:
-			cmd := mgr.NewUpload(&h)
+			cmd := a.mgr.NewUpload(h)
 			mux.Handle(pattern, middleware.Auth(a.Cfg.Server.Token, a.DefaultToken, cmd, a.Logger))
 		default:
 			a.Logger.Warn("unknown hook type encountered", "type", string(h.Type))
@@ -114,22 +135,17 @@ func (a *App) Routes(mux *http.ServeMux) (*http.ServeMux, error) {
 
 // Init initializes the app by parsing flags and loading config.
 func (a *App) Init() error {
-	nc := newCommander(a)
-	if err := a.parse(nc); err != nil {
+	a.Flag.args = os.Args[1:]
+	if err := a.parseFlags(); err != nil {
 		return err
-	}
-
-	if a.Flag.verbose {
-		parseLogger(a)
 	}
 
 	if err := loadConfig(a); err != nil {
 		return err
 	}
 
-	if a.Flag.list {
-		fmt.Fprint(a.Stdout, hook.PrettyHooks(a.Cfg.Hooks))
-		cli.ErrAndExit(a.Name, nil)
+	if a.Flag.verbose {
+		parseLogger(a)
 	}
 
 	if exit, err := a.Dispatch(); exit {
@@ -140,14 +156,54 @@ func (a *App) Init() error {
 }
 
 func (a *App) Dispatch() (bool, error) {
-	return newCommander(a).dispatch(a.cmd)
+	if a.Flag.version {
+		fmt.Fprint(a.Stdout, a.version())
+		return true, nil
+	}
+
+	if a.Flag.generate {
+		return true, a.genCurl(a.Flag.args[1:])
+	}
+
+	if a.Flag.list {
+		fmt.Fprint(a.Stdout, a.mgr.PrettifyHooks())
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (a *App) WriteConfig() error {
 	return a.Cfg.write(a.CfgFile)
 }
 
+func (a *App) version() string {
+	return fmt.Sprintf("%s v%s %s/%s\n", a.Name, a.Version, runtime.GOOS, runtime.GOARCH)
+}
+
+func (a *App) genCurl(args []string) error {
+	if len(args) == 0 {
+		fmt.Fprintf(a.Stdout, "%s: usage: gen <hook-name> or <hook-endpoint>\n", a.Name)
+		return nil
+	}
+
+	h, err := a.mgr.Find(args[0])
+	if err != nil {
+		return err
+	}
+
+	baseURL := a.Cfg.Server.Addr
+	if strings.HasPrefix(baseURL, ":") {
+		baseURL = "localhost" + baseURL
+		_ = baseURL
+	}
+
+	fmt.Fprintf(a.Stdout, "not implemented yet\n\n%s\n", h)
+	return nil
+}
+
 func New(name, version string) *App {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	return &App{
 		Name:         name,
 		Version:      version,
@@ -155,8 +211,9 @@ func New(name, version string) *App {
 		Stdin:        os.Stdin,
 		Stdout:       os.Stdout,
 		Stderr:       os.Stderr,
-		Logger:       slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Logger:       logger,
 		FlagSet:      flag.NewFlagSet(name, flag.ExitOnError),
 		DefaultToken: defaultToken,
+		mgr:          hook.NewManager(name, logger),
 	}
 }

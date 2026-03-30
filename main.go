@@ -39,11 +39,13 @@ func run(app *application.App) error {
 		return err
 	}
 
-	ui, err := webui.New(app)
-	if err != nil {
-		return err
+	if app.Flag.Webui {
+		ui, err := webui.New(app)
+		if err != nil {
+			return err
+		}
+		ui.Routes(mux)
 	}
-	ui.Routes(mux)
 
 	srv := server.New(
 		server.WithMux(mux),
