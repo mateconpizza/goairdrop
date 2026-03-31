@@ -10,7 +10,10 @@ import (
 	"time"
 )
 
-const HeaderToken = "X-Goaird-Token" // #nosec G101
+const (
+	HeaderDevice = "X-Device-Name"
+	HeaderToken  = "X-Goaird-Token" // #nosec G101
+)
 
 type Middleware func(http.Handler) http.Handler
 

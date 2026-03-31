@@ -43,6 +43,7 @@ type arguments struct {
 	generate bool
 	list     bool
 	Webui    bool
+	hook     bool
 }
 
 type command struct {
@@ -54,6 +55,7 @@ type command struct {
 
 func (a *App) commands() []command {
 	return []command{
+		{"hook", "H", "print hook details", &a.Flag.hook},
 		{"list", "l", "list configured hooks", &a.Flag.list},
 		{"gen", "g", "generate a cURL from a hook", &a.Flag.generate},
 		{"webui", "w", "enable webui", &a.Flag.Webui},
@@ -77,7 +79,7 @@ func (a *App) usage() func() {
 
 	cmds := a.commands()
 	if len(cmds) > 0 {
-		const padding = 16
+		const padding = 18
 		sb.WriteString("Flags:\n")
 		for _, c := range cmds {
 			flagStr := fmt.Sprintf("-%s, --%s", c.nameShort, c.name)
@@ -166,6 +168,10 @@ func (a *App) dispatch() (bool, error) {
 		return true, a.genCurl(a.Flag.args[1:])
 	}
 
+	if a.Flag.hook {
+		return true, a.printHook(a.Flag.args[1:])
+	}
+
 	if a.Flag.list {
 		fmt.Fprint(a.Stdout, a.mgr.PrettifyHooks())
 		return true, nil
@@ -199,7 +205,23 @@ func (a *App) genCurl(args []string) error {
 		_ = baseURL
 	}
 
-	fmt.Fprintf(a.Stdout, "not implemented yet\n\n%s\n", h)
+	fmt.Fprintln(a.Stdout, genCurl(h, baseURL))
+
+	return nil
+}
+
+func (a *App) printHook(args []string) error {
+	if len(args) == 0 {
+		fmt.Fprintf(a.Stdout, "%s: usage: --hook <hook-name> or <hook-endpoint>\n", a.Name)
+		return nil
+	}
+
+	h, err := a.mgr.Find(args[0])
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintln(a.Stdout, h.String())
 	return nil
 }
 
