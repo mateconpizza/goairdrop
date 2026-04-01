@@ -45,7 +45,8 @@ The daemon is configured via a JSON file that defines the server settings and a 
 ```json
 {
   "server": {
-    "address": ":8080"
+    "address": ":8080",
+    "token": "change-default-token-1234"
   },
   "hooks": [
     {
