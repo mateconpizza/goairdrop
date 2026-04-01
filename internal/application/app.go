@@ -56,12 +56,12 @@ type command struct {
 
 func (a *App) commands() []command {
 	return []command{
-		{"hook", "H", "print hook details", &a.Flag.hook},
-		{"list", "l", "list configured hooks", &a.Flag.list},
-		{"gen", "g", "generate a cURL from a hook", &a.Flag.generate},
-		{"webui", "w", "enable webui", &a.Flag.Webui},
-		{"version", "V", "print version and exit", &a.Flag.version},
-		{"verbose", "v", "increase verbosity", &a.Flag.verbose},
+		{"hook", "H", "show hook details", &a.Flag.hook},
+		{"list", "l", "list hooks", &a.Flag.list},
+		{"gen", "g", "generate curl from hook", &a.Flag.generate},
+		{"webui", "w", "enable web UI", &a.Flag.Webui},
+		{"version", "V", "print version", &a.Flag.version},
+		{"verbose", "v", "verbose output", &a.Flag.verbose},
 	}
 }
 
@@ -76,7 +76,7 @@ func (a *App) parseFlags() error {
 
 func (a *App) usage() func() {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "Usage: %s <flag> [args]\n\n", a.Name)
+	fmt.Fprintf(&sb, "Usage: %s [flag] [args]\n\n", a.Name)
 
 	cmds := a.commands()
 	if len(cmds) > 0 {

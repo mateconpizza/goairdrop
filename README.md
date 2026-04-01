@@ -146,6 +146,19 @@ Executes a local command using a templated payload.
 ### Usage
 
 ```sh
+$ goaird -h
+Usage: goaird [flag] [args]
+
+Flags:
+  -H, --hook         show hook details
+  -l, --list         list hooks
+  -g, --gen          generate curl from hook
+  -w, --webui        enable web UI
+  -V, --version      print version
+  -v, --verbose      verbose output
+```
+
+```sh
 # Send a URL to open with `xdg-open`
 curl -X POST http://localhost:8080/url \
   -H "Content-Type: application/json" \
